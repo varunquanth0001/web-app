@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Community Event Planner</title>
+
+<link rel="stylesheet" href="styles.css">
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBqHhw4SiIAAFVXtvYffwLo178S9as5azU",
+  authDomain: "community-2d3f3.firebaseapp.com",
+  databaseURL: "https://community-2d3f3-default-rtdb.firebaseio.com",
+  projectId: "community-2d3f3",
+  storageBucket: "community-2d3f3.firebasestorage.app",
+  messagingSenderId: "199258213859",
+  appId: "1:199258213859:web:e65fd81eed584efc14e4d6",
+  measurementId: "G-47SQKS4H27"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+</script>
+
+</head>
+
+<body>
+
+<!-- Auth Check using Firebase Auth -->
+<script>
+firebase.auth().onAuthStateChanged(function(user) {
+  if (!user) {
+    window.location.href = 'login.html';
+  } else {
+    // User is signed in — populate UI
+    const populateUI = () => {
+      const userAvatar = document.getElementById('userAvatar');
+      const userName = document.getElementById('userName');
+
+      // First try to get profile from Firebase DB
+      firebase.database().ref('users/' + user.uid).once('value').then((snapshot) => {
+        const profile = snapshot.val();
+
+        if (profile) {
+          if (userName) userName.textContent = profile.name;
+          if (userAvatar && profile.avatar) {
+            userAvatar.textContent = profile.avatar.initial;
+            userAvatar.style.backgroundColor = profile.avatar.color;
+          }
+        } else {
+          // Fallback to Firebase Auth displayName
+          if (userName) userName.textContent = user.displayName || user.email;
+          if (userAvatar) {
+            const initial = (user.displayName || user.email).charAt(0).toUpperCase();
+            userAvatar.textContent = initial;
+          }
+        }
+      });
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', populateUI);
+    } else {
+      populateUI();
+    }
+  }
+});
+</script>
+
+<div class="container">
+
+<header class="header">
+
+<h1>Community Event Planner</h1>
+
+<p>Discover, Create, and Join Amazing Events</p>
+
+<div class="user-controls">
+
+<div class="user-profile">
+<div id="userAvatar" class="avatar-circle"></div>
+<span id="userName" class="user-name-label"></span>
+</div>
+
+<button class="btn btn-danger" onclick="handleLogout()">Logout</button>
+
+<button class="btn btn-primary" id="createEventBtn">+ Create Event</button>
+
+</div>
+
+</header>
+
+<!-- Dashboard Stats -->
+
+<div class="stats-section">
+<div class="stat-card">
+<div class="stat-icon">📅</div>
+<div id="totalEventsCount" class="stat-number">0</div>
+<div class="stat-label">Total Events</div>
+</div>
+<div class="stat-card">
+<div class="stat-icon">✏️</div>
+<div id="myEventsCount" class="stat-number">0</div>
+<div class="stat-label">My Events</div>
+</div>
+<div class="stat-card">
+<div class="stat-icon">🙋</div>
+<div id="attendingCount" class="stat-number">0</div>
+<div class="stat-label">Attending</div>
+</div>
+</div>
+
+<!-- Categories Section -->
+
+<div class="categories-section">
+<h2 class="section-title">Browse Categories</h2>
+<div class="categories-grid">
+
+<div class="category-card" onclick="filterByCategory('social')">
+<span class="category-icon">🎉</span>
+<h3>Social</h3>
+<p>Parties, Meetups & Gatherings</p>
+</div>
+
+<div class="category-card" onclick="filterByCategory('professional')">
+<span class="category-icon">💼</span>
+<h3>Professional</h3>
+<p>Workshops, Seminars & Networking</p>
+</div>
+
+<div class="category-card" onclick="filterByCategory('sports')">
+<span class="category-icon">⚽</span>
+<h3>Sports</h3>
+<p>Tournaments, Matches & Fitness</p>
+</div>
+
+<div class="category-card" onclick="filterByCategory('arts')">
+<span class="category-icon">🎨</span>
+<h3>Arts & Culture</h3>
+<p>Music, Dance & Exhibitions</p>
+</div>
+
+<div class="category-card" onclick="filterByCategory('education')">
+<span class="category-icon">📚</span>
+<h3>Education</h3>
+<p>Courses, Lectures & Study Groups</p>
+</div>
+
+<div class="category-card" onclick="filterByCategory('technology')">
+<span class="category-icon">💻</span>
+<h3>Technology</h3>
+<p>Hackathons, Tech Talks & Demos</p>
+</div>
+
+<div class="category-card" onclick="filterByCategory('music')">
+<span class="category-icon">🎵</span>
+<h3>Music</h3>
+<p>Concerts, Jam Sessions & Festivals</p>
+</div>
+
+<div class="category-card" onclick="filterByCategory('food')">
+<span class="category-icon">🍕</span>
+<h3>Food & Drinks</h3>
+<p>Food Fests, Cookoffs & Tastings</p>
+</div>
+
+<div class="category-card" onclick="filterByCategory('health')">
+<span class="category-icon">🧘</span>
+<h3>Health & Wellness</h3>
+<p>Yoga, Meditation & Fitness Camps</p>
+</div>
+
+<div class="category-card" onclick="filterByCategory('travel')">
+<span class="category-icon">✈️</span>
+<h3>Travel</h3>
+<p>Trips, Treks & Adventures</p>
+</div>
+
+<div class="category-card" onclick="filterByCategory('charity')">
+<span class="category-icon">🤝</span>
+<h3>Charity</h3>
+<p>Volunteering, Fundraisers & NGO</p>
+</div>
+
+<div class="category-card" onclick="filterByCategory('other')">
+<span class="category-icon">🌟</span>
+<h3>Other</h3>
+<p>Miscellaneous Events & More</p>
+</div>
+
+</div>
+</div>
+
+<!-- Search -->
+
+<div class="controls">
+
+<div class="search-box">
+<input type="text" id="searchInput" placeholder="🔍 Search events">
+</div>
+
+<div class="filter-group">
+
+<select id="categoryFilter">
+<option value="all">All Categories</option>
+<option value="social">Social</option>
+<option value="professional">Professional</option>
+<option value="sports">Sports</option>
+<option value="arts">Arts & Culture</option>
+<option value="education">Education</option>
+<option value="technology">Technology</option>
+<option value="music">Music</option>
+<option value="food">Food & Drinks</option>
+<option value="health">Health & Wellness</option>
+<option value="travel">Travel</option>
+<option value="charity">Charity</option>
+<option value="other">Other</option>
+</select>
+
+<select id="dateFilter">
+<option value="all">All Dates</option>
+<option value="upcoming">Upcoming</option>
+<option value="thisWeek">This Week</option>
+<option value="thisMonth">This Month</option>
+</select>
+
+</div>
+
+</div>
+
+<!-- Events Grid -->
+
+<div id="loadingSpinner" class="loading-container">
+<div class="spinner"></div>
+<div class="loading-text">Loading events...</div>
+</div>
+
+<div id="eventsGrid" class="events-grid"></div>
+
+<div id="emptyState" class="empty-state hidden">
+<h3>No Events Found</h3>
+<p>Create a new event to get started.</p>
+</div>
+
+</div>
+
+<!-- Create Event Modal -->
+
+<div id="eventModal" class="modal">
+
+<div class="modal-content">
+
+<div class="modal-header">
+<h2>Create Event</h2>
+<button class="close-btn" id="closeEventModal">&times;</button>
+</div>
+
+<form id="eventForm">
+
+<input type="hidden" id="eventId">
+
+<div class="form-group">
+<input type="text" id="eventTitle" placeholder="Event Title" required>
+</div>
+
+<div class="form-group">
+<select id="eventCategory">
+<option value="social">Social</option>
+<option value="professional">Professional</option>
+<option value="sports">Sports</option>
+<option value="arts">Arts & Culture</option>
+<option value="education">Education</option>
+<option value="technology">Technology</option>
+<option value="music">Music</option>
+<option value="food">Food & Drinks</option>
+<option value="health">Health & Wellness</option>
+<option value="travel">Travel</option>
+<option value="charity">Charity</option>
+<option value="other">Other</option>
+</select>
+</div>
+
+<div class="form-group">
+<input type="date" id="eventDate" required>
+</div>
+
+<div class="form-group">
+<input type="time" id="eventTime" required>
+</div>
+
+<div class="form-group">
+<input type="text" id="eventLocation" placeholder="Location" required>
+</div>
+
+<div class="form-group">
+<textarea id="eventDescription" placeholder="Description"></textarea>
+</div>
+
+<div class="form-actions">
+<button type="button" class="btn btn-outline" id="cancelEventBtn">Cancel</button>
+<button type="submit" class="btn btn-primary">Save Event</button>
+</div>
+
+</form>
+
+</div>
+
+</div>
+
+<!-- Event Detail Modal -->
+
+<div id="detailModal" class="modal">
+
+<div class="modal-content">
+
+<div class="modal-header">
+<h2>Event Details</h2>
+<button class="close-btn" id="closeDetailModal">&times;</button>
+</div>
+
+<div id="eventDetailContent"></div>
+
+<div class="form-actions">
+
+<button class="btn btn-outline" id="closeDetailBtn">Close</button>
+
+<button class="btn btn-secondary" id="rsvpBtn">Join Event</button>
+
+<button class="btn btn-primary" id="editEventBtn">Edit</button>
+
+<button class="btn btn-danger" id="deleteEventBtn">Delete</button>
+
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+function handleLogout(){
+
+if(confirm("Logout?")){
+
+firebase.auth().signOut().then(() => {
+window.location.href="login.html";
+}).catch((error) => {
+console.error("Logout error:", error);
+alert("Error logging out. Please try again.");
+});
+
+}
+
+}
+
+function filterByCategory(cat){
+const sel=document.getElementById('categoryFilter');
+if(sel){
+sel.value=cat;
+sel.dispatchEvent(new window.Event('change'));
+}
+}
+
+</script>
+
+<div id="toastContainer" class="toast-container"></div>
+
+<script src="app.js"></script>
+
+</body>
+</html>
